@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	buildGradleBasename    = "build.gradle"
-	settingsGradleBasename = "settings.gradle"
+	buildGradleBasename      = "build.gradle"
+	settingsGradleBasename   = "settings.gradle"
+	gradlePropertiesBasename = "gradle.properties"
 )
 
 // -----------------------
@@ -194,6 +195,7 @@ func main() {
 		log.Fail("Failed to list files at: %s", sourceDir)
 	}
 
+	// Root build.gradle file
 	rootBuildGradleFile := filterRootBuildGradleFile(files)
 	if rootBuildGradleFile == "" {
 		log.Fail("No root build.gradle file foud in files: %v", files)
@@ -202,8 +204,8 @@ func main() {
 
 	rootBuildGradleDir := filepath.Dir(rootBuildGradleFile)
 
+	// Root settings.gradle file
 	rootSettingsGradleFile := filepath.Join(rootBuildGradleDir, settingsGradleBasename)
-
 	if exist, err := pathutil.IsPathExists(rootSettingsGradleFile); err != nil {
 		log.Fail("Failed to check if root settings.gradle exist at: %s, error: %s", rootSettingsGradleFile, err)
 	} else if !exist {
@@ -211,6 +213,16 @@ func main() {
 	}
 	log.Details("root settings.gradle file:: %s", rootSettingsGradleFile)
 
+	// Root gradle.properties file
+	rootGradlePropertiesFile := filepath.Join(rootBuildGradleDir, gradlePropertiesBasename)
+	if exist, err := pathutil.IsPathExists(rootGradlePropertiesFile); err != nil {
+		log.Fail("Failed to check if root gradle.properties exist at: %s, error: %s", rootGradlePropertiesFile, err)
+	} else if !exist {
+		log.Fail("No root gradle.properties exist at: %s", rootGradlePropertiesFile)
+	}
+	log.Details("root gradle.properties file:: %s", rootGradlePropertiesFile)
+
+	// Analyze gradle
 	buildGradleFiles := filterBuildGradleFiles(files)
 
 	if len(buildGradleFiles) == 0 {
@@ -246,21 +258,26 @@ func main() {
 	}
 	log.Details("build.gradle files to analyze: %v", buildGradleFilesToAnalyze)
 
+	gradlePropertiesContent, err := fileutil.ReadStringFromFile(rootGradlePropertiesFile)
+	if err != nil {
+		log.Fail("Failed to read gradle.properties file at: %s", rootGradlePropertiesFile)
+	}
+
 	for _, buildGradleFile := range buildGradleFilesToAnalyze {
 		log.Info("Analyze build.gradle file: %s", buildGradleFile)
 
-		content, err := fileutil.ReadStringFromFile(buildGradleFile)
+		buildGradleContent, err := fileutil.ReadStringFromFile(buildGradleFile)
 		if err != nil {
 			log.Fail("Failed to read build.gradle file at: %s", buildGradleFile)
 		}
 
 		containsCompileSDKVersion := true
-		if !strings.Contains(content, "compileSdkVersion") {
+		if !strings.Contains(buildGradleContent, "compileSdkVersion") {
 			containsCompileSDKVersion = false
 		}
 
 		containsBuildToolsVersion := true
-		if !strings.Contains(content, "buildToolsVersion") {
+		if !strings.Contains(buildGradleContent, "buildToolsVersion") {
 			containsBuildToolsVersion = false
 		}
 
@@ -277,9 +294,13 @@ func main() {
 		}
 
 		// Ensure android dependencies
-		dependencies, err := analyzer.NewProjectDependenciesModel(content)
+		dependencies, err := analyzer.NewProjectDependenciesModel(buildGradleContent, gradlePropertiesContent)
 		if err != nil {
-			fmt.Println(content)
+			fmt.Println("build.gradle:")
+			fmt.Println(buildGradleContent)
+			fmt.Println("gradle.properties:")
+			fmt.Println(gradlePropertiesContent)
+
 			log.Fail("Failed to parse build.gradle at: %s, error: %s", buildGradleFile, err)
 		}
 

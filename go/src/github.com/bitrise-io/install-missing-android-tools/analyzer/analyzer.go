@@ -24,8 +24,8 @@ type ProjectDependenciesModel struct {
 }
 
 // NewProjectDependenciesModel ...
-func NewProjectDependenciesModel(buildGradleContent string) (ProjectDependenciesModel, error) {
-	return parseBuildGradle(buildGradleContent)
+func NewProjectDependenciesModel(buildGradleContent, gradlePropertiesContent string) (ProjectDependenciesModel, error) {
+	return parseGradle(buildGradleContent, gradlePropertiesContent)
 }
 
 // String ...
@@ -86,7 +86,7 @@ func ParseIncludedModules(settingsGradleContent string) ([]string, error) {
 // --- Functions
 // -----------------------
 
-func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error) {
+func parseCompileSDKVersion(buildGradleContent string) (string, error) {
 	//     compileSdkVersion 23
 	compileSDKVersionRegexp := regexp.MustCompile(`\s*compileSdkVersion (?P<version>.+)`)
 	compileSDKVersionStr := ""
@@ -101,20 +101,14 @@ func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if compileSDKVersionStr == "" {
-		return nil, errors.New("Failed to find compileSdkVersion")
+		return "", errors.New("Failed to find compileSdkVersion")
 	}
 
-	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
-	if err != nil {
-		// Possible defined with variable
-		return nil, fmt.Errorf("failed to parse compileSdkVersion (%s), error: %s", compileSDKVersionStr, err)
-	}
-
-	return compileSDKVesrion, nil
+	return compileSDKVersionStr, nil
 }
 
 func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error) {
@@ -198,10 +192,36 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 	return (googlePlayServicesVersionStr != ""), nil
 }
 
-func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
-	compileSDKVersion, err := parseCompileSDKVersion(buildGradleContent)
+func findVariable(content, variable string) (string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		scanner.Text()
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return "", nil
+}
+
+func parseGradle(buildGradleContent, gradlePropertiesContent string) (ProjectDependenciesModel, error) {
+	compileSDKVersionStr, err := parseCompileSDKVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version, error: %s", err)
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from build.gradle, error: %s", err)
+	}
+
+	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
+	if err != nil {
+		// Possible defined with variable
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse (%s), error: %s", compileSDKVersionStr, err)
+
+		/*
+			compileSDKVersionStr, err := findVariable(gradlePropertiesContent, compileSDKVersionStr)
+			if err != nil {
+				return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from gradle.properties, error: %s", err)
+			}
+		*/
 	}
 
 	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
@@ -220,7 +240,7 @@ func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, erro
 	}
 
 	dependencies := ProjectDependenciesModel{
-		ComplieSDKVersion: compileSDKVersion,
+		ComplieSDKVersion: compileSDKVesrion,
 		BuildToolsVersion: buildToolsVersion,
 
 		UseSupportLibrary:     useSupportLibrary,
