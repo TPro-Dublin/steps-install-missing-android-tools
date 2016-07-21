@@ -230,12 +230,15 @@ func parseCompileSDKVersion(buildGradleContent string) (string, error) {
 		return "", errors.New("Failed to find compileSdkVersion")
 	}
 
+	compileSDKVersionStr = strings.Trim(compileSDKVersionStr, `"`)
+	compileSDKVersionStr = strings.Trim(compileSDKVersionStr, `'`)
+
 	return compileSDKVersionStr, nil
 }
 
 func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 	//     buildToolsVersion "23.0.3"
-	buildToolsVersionRegexp := regexp.MustCompile(`\s*buildToolsVersion "(?P<version>.+)"`)
+	buildToolsVersionRegexp := regexp.MustCompile(`\s*buildToolsVersion (?P<version>.+)`)
 	buildToolsVersionStr := ""
 
 	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
@@ -254,6 +257,9 @@ func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 	if buildToolsVersionStr == "" {
 		return "", errors.New("Failed to find buildToolsVersion")
 	}
+
+	buildToolsVersionStr = strings.Trim(buildToolsVersionStr, `"`)
+	buildToolsVersionStr = strings.Trim(buildToolsVersionStr, `'`)
 
 	return buildToolsVersionStr, nil
 }
