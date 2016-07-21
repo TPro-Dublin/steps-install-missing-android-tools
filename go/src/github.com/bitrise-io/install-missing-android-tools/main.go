@@ -279,7 +279,7 @@ func main() {
 		// Ensure android dependencies
 		dependencies, err := analyzer.NewProjectDependenciesModel(content)
 		if err != nil {
-			log.Fail("Failed to parse build.gradle at: %s", buildGradleFile)
+			log.Fail("Failed to parse build.gradle at: %s, error: %s", buildGradleFile, err)
 		}
 
 		fmt.Println(dependencies.String())

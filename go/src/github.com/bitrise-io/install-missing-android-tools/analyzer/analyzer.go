@@ -201,22 +201,22 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
 	compileSDKVersion, err := parseCompileSDKVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version, error: %s", err)
 	}
 
 	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse build tools version, error: %s", err)
 	}
 
 	useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse support library usage, error: %s", err)
 	}
 
 	useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse google play service usage, error: %s", err)
 	}
 
 	dependencies := ProjectDependenciesModel{
