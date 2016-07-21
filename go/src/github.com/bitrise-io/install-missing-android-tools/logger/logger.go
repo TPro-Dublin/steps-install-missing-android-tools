@@ -38,8 +38,12 @@ func Done(format string, v ...interface{}) {
 }
 
 // Configs ...
-func Configs(sourceDir, updateSupportLibraryAndPlayServices string) {
+func Configs(sourceDir, updateSupportLibraryAndPlayServices, compileSDKVersion, buildToolsVersion string) {
 	Info("Configs:")
+
 	Details("source_dir: %s", sourceDir)
 	Details("update_support_library_and_play_services: %s", updateSupportLibraryAndPlayServices)
+
+	Details("compileSDKVersion: %s", compileSDKVersion)
+	Details("buildToolsVersion: %s", buildToolsVersion)
 }

@@ -20,33 +20,31 @@ func TestParseIncludedModules(t *testing.T) {
 }
 
 func TestParseCompileSDKVersion(t *testing.T) {
-	/*
-			t.Log("simple")
-			{
-				content := `
+	t.Log("simple")
+	{
+		content := `
 		android {
 		    compileSdkVersion 23
 		    buildToolsVersion "23.0.3"
 		}
 		`
-				v, err := parseCompileSDKVersion(content)
-				require.NoError(t, err)
-				require.NotNil(t, v)
-				require.Equal(t, "23.0.0", v.String())
-			}
+		v, err := parseCompileSDKVersion(content)
+		require.NoError(t, err)
+		require.NotNil(t, v)
+		require.Equal(t, "23", v)
+	}
 
-			t.Log("no compileSdkVersion")
-			{
-				content := `
+	t.Log("no compileSdkVersion")
+	{
+		content := `
 		android {
 		    buildToolsVersion "23.0.3"
 		}
 		`
-				v, err := parseCompileSDKVersion(content)
-				require.Error(t, err)
-				require.Nil(t, v)
-			}
-	*/
+		v, err := parseCompileSDKVersion(content)
+		require.Error(t, err)
+		require.Equal(t, "", v)
+	}
 }
 
 func TestParseBuildToolsVersion(t *testing.T) {
@@ -61,7 +59,7 @@ android {
 		v, err := parseBuildToolsVersion(content)
 		require.NoError(t, err)
 		require.NotNil(t, v)
-		require.Equal(t, "23.0.3", v.String())
+		require.Equal(t, "23.0.3", v)
 	}
 
 	t.Log("no compileSdkVersion")
@@ -73,6 +71,6 @@ android {
 `
 		v, err := parseBuildToolsVersion(content)
 		require.Error(t, err)
-		require.Nil(t, v)
+		require.Equal(t, "", v)
 	}
 }

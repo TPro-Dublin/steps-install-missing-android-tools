@@ -175,7 +175,10 @@ func main() {
 	sourceDir := os.Getenv("source_dir")
 	updateSupportLibraryAndGooglePlayServices := os.Getenv("update_support_library_and_play_services")
 
-	log.Configs(sourceDir, updateSupportLibraryAndGooglePlayServices)
+	compileSDKVersion := os.Getenv("complie_sdk_version")
+	buildToolsVersion := os.Getenv("build_tools_version")
+
+	log.Configs(sourceDir, updateSupportLibraryAndGooglePlayServices, compileSDKVersion, buildToolsVersion)
 
 	validateRequiredInput("source_dir", sourceDir)
 	validateRequiredInput("update_support_library_and_play_services", updateSupportLibraryAndGooglePlayServices)
@@ -291,17 +294,37 @@ func main() {
 
 		if !containsCompileSDKVersion || !containsBuildToolsVersion {
 			log.Warn("maybe not the project's module build.gradle provided")
+			continue
 		}
 
-		// Ensure android dependencies
-		dependencies, err := analyzer.NewProjectDependenciesModel(buildGradleContent, gradlePropertiesContent)
-		if err != nil {
-			fmt.Println("build.gradle:")
-			fmt.Println(buildGradleContent)
-			fmt.Println("gradle.properties:")
-			fmt.Println(gradlePropertiesContent)
+		dependencies := analyzer.NewProjectDependenciesModel()
 
-			log.Fail("Failed to parse build.gradle at: %s, error: %s", buildGradleFile, err)
+		if compileSDKVersion != "" {
+			if err := dependencies.SetComplieSDKVersion(compileSDKVersion); err != nil {
+				log.Fail("Failed to set compile SDK version (%s), error: %s", compileSDKVersion, err)
+			}
+		} else {
+			if err := dependencies.ParseComplieSDKVersion(buildGradleContent, gradlePropertiesContent); err != nil {
+				log.Fail("Failed to parse compile SDK version, error: %s", err)
+			}
+		}
+
+		if buildToolsVersion != "" {
+			if err := dependencies.SetBuildToolsVersion(buildToolsVersion); err != nil {
+				log.Fail("Failed to set build tools version (%s), error: %s", buildToolsVersion, err)
+			}
+		} else {
+			if err := dependencies.ParseBuildToolsVersion(buildGradleContent, gradlePropertiesContent); err != nil {
+				log.Fail("Failed to parse build tools version, error: %s", err)
+			}
+		}
+
+		if err := dependencies.ParseUseSupportLibrary(buildGradleContent); err != nil {
+			log.Fail("Failed to parse if uses Support Library, error: %s", err)
+		}
+
+		if err := dependencies.ParseUseGooglePlayServices(buildGradleContent); err != nil {
+			log.Fail("Failed to parse if uses Google Play Services, error: %s", err)
 		}
 
 		fmt.Println(dependencies.String())

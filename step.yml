@@ -29,6 +29,22 @@ inputs:
       summary: ""
       description: |
         Your android project's source directory.
+  - complie_sdk_version: 
+    opts:
+      title: Compile SDK Version to ensure
+      summary: ""
+      description: |
+        Compile SDK Version to ensure.
+
+        If input is empty, step will try to parse `compileSdkVersion` from your app's build.gradle file.
+  - build_tools_version: 
+    opts:
+      title: Build Tools Version to ensure
+      summary: ""
+      description: |
+        Build Tools Version to ensure.
+
+        If input is empty, step will try to parse `buildToolsVersion` from your app's build.gradle file.
   - update_support_library_and_play_services: "true"
     opts:
       title: "Should the step update `Support Library` and `Google Play Services`"

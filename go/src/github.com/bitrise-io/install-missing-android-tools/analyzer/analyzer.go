@@ -24,22 +24,144 @@ type ProjectDependenciesModel struct {
 }
 
 // NewProjectDependenciesModel ...
-func NewProjectDependenciesModel(buildGradleContent, gradlePropertiesContent string) (ProjectDependenciesModel, error) {
-	return parseGradle(buildGradleContent, gradlePropertiesContent)
+func NewProjectDependenciesModel() *ProjectDependenciesModel {
+	return &ProjectDependenciesModel{}
+}
+
+// SetComplieSDKVersion ...
+func (dependencies *ProjectDependenciesModel) SetComplieSDKVersion(complieSDKVersionStr string) error {
+	complieSDKVersion, err := version.NewVersion(complieSDKVersionStr)
+	if err != nil {
+		return err
+	}
+
+	dependencies.ComplieSDKVersion = complieSDKVersion
+	return nil
+}
+
+// SetBuildToolsVersion ...
+func (dependencies *ProjectDependenciesModel) SetBuildToolsVersion(buildToolsVersionStr string) error {
+	buildToolsVersion, err := version.NewVersion(buildToolsVersionStr)
+	if err != nil {
+		return err
+	}
+
+	dependencies.BuildToolsVersion = buildToolsVersion
+	return nil
+}
+
+// ParseComplieSDKVersion ...
+func (dependencies *ProjectDependenciesModel) ParseComplieSDKVersion(buildGradleContent, gradlePropertiesContent string) error {
+	compileSDKVersionStr, err := parseCompileSDKVersion(buildGradleContent)
+	if err != nil {
+		return fmt.Errorf("Failed to parse compile sdk version from build.gradle, error: %s", err)
+	}
+
+	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
+	if err != nil {
+		// Possible defined with variable
+
+		// Search for var in build.gradle
+		compileSDKVersionStr, err = findVariable(buildGradleContent, compileSDKVersionStr)
+		if err != nil {
+			return fmt.Errorf("Failed to find variable (%s) in build.gradle, error: %s", compileSDKVersionStr, err)
+		}
+
+		compileSDKVesrion, err = version.NewVersion(compileSDKVersionStr)
+		if err != nil {
+			// Search for var in gradle.properties
+			compileSDKVersionStr, err = findVariable(gradlePropertiesContent, compileSDKVersionStr)
+			if err != nil {
+				return fmt.Errorf("Failed to find variable (%s) in gradle.properties, error: %s", compileSDKVersionStr, err)
+			}
+			compileSDKVesrion, err = version.NewVersion(compileSDKVersionStr)
+			if err != nil {
+				return fmt.Errorf("Failed to parse (%s), error: %s", compileSDKVersionStr, err)
+			}
+		}
+	}
+
+	if compileSDKVesrion == nil {
+		return fmt.Errorf("Failed to parse (%s)", compileSDKVersionStr)
+	}
+
+	dependencies.ComplieSDKVersion = compileSDKVesrion
+	return nil
+}
+
+// ParseBuildToolsVersion ...
+func (dependencies *ProjectDependenciesModel) ParseBuildToolsVersion(buildGradleContent, gradlePropertiesContent string) error {
+	buildToolsVersionStr, err := parseBuildToolsVersion(buildGradleContent)
+	if err != nil {
+		return fmt.Errorf("Failed to parse build tools version from build.gradle, error: %s", err)
+	}
+
+	buildToolsVersion, err := version.NewVersion(buildToolsVersionStr)
+	if err != nil {
+		// Possible defined with variable
+
+		// Search for var in build.gradle
+		buildToolsVersionStr, err = findVariable(buildGradleContent, buildToolsVersionStr)
+		if err != nil {
+			return fmt.Errorf("Failed to find variable (%s) in build.gradle, error: %s", buildToolsVersionStr, err)
+		}
+
+		buildToolsVersion, err = version.NewVersion(buildToolsVersionStr)
+		if err != nil {
+			// Search for var in gradle.properties
+			buildToolsVersionStr, err = findVariable(gradlePropertiesContent, buildToolsVersionStr)
+			if err != nil {
+				return fmt.Errorf("Failed to find variable (%s) in gradle.properties, error: %s", buildToolsVersionStr, err)
+			}
+			buildToolsVersion, err = version.NewVersion(buildToolsVersionStr)
+			if err != nil {
+				return fmt.Errorf("Failed to parse (%s), error: %s", buildToolsVersionStr, err)
+			}
+		}
+	}
+
+	if buildToolsVersion == nil {
+		return fmt.Errorf("Failed to parse (%s)", buildToolsVersionStr)
+	}
+
+	dependencies.BuildToolsVersion = buildToolsVersion
+	return nil
+}
+
+// ParseUseSupportLibrary ...
+func (dependencies *ProjectDependenciesModel) ParseUseSupportLibrary(buildGradleContent string) error {
+	useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
+	if err != nil {
+		return fmt.Errorf("Failed to parse support library usage, error: %s", err)
+	}
+
+	dependencies.UseSupportLibrary = useSupportLibrary
+	return nil
+}
+
+// ParseUseGooglePlayServices ...
+func (dependencies *ProjectDependenciesModel) ParseUseGooglePlayServices(buildGradleContent string) error {
+	useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
+	if err != nil {
+		return fmt.Errorf("Failed to parse google play service usage, error: %s", err)
+	}
+
+	dependencies.UseGooglePlayServices = useGooglePlayServices
+	return nil
 }
 
 // String ...
-func (projectDepencies ProjectDependenciesModel) String() string {
+func (dependencies ProjectDependenciesModel) String() string {
 	outStr := ""
-	if projectDepencies.ComplieSDKVersion != nil {
-		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", projectDepencies.ComplieSDKVersion.String())
+	if dependencies.ComplieSDKVersion != nil {
+		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", dependencies.ComplieSDKVersion.String())
 	}
-	if projectDepencies.BuildToolsVersion != nil {
-		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", projectDepencies.BuildToolsVersion.String())
+	if dependencies.BuildToolsVersion != nil {
+		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", dependencies.BuildToolsVersion.String())
 	}
 
-	outStr += fmt.Sprintf("  uses Support Library: %v\n", projectDepencies.UseSupportLibrary)
-	outStr += fmt.Sprintf("  uses Google Play Services: %v\n", projectDepencies.UseGooglePlayServices)
+	outStr += fmt.Sprintf("  uses Support Library: %v\n", dependencies.UseSupportLibrary)
+	outStr += fmt.Sprintf("  uses Google Play Services: %v\n", dependencies.UseGooglePlayServices)
 	return outStr
 }
 
@@ -111,7 +233,7 @@ func parseCompileSDKVersion(buildGradleContent string) (string, error) {
 	return compileSDKVersionStr, nil
 }
 
-func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error) {
+func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 	//     buildToolsVersion "23.0.3"
 	buildToolsVersionRegexp := regexp.MustCompile(`\s*buildToolsVersion "(?P<version>.+)"`)
 	buildToolsVersionStr := ""
@@ -126,20 +248,14 @@ func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if buildToolsVersionStr == "" {
-		return nil, errors.New("Failed to find buildToolsVersion")
+		return "", errors.New("Failed to find buildToolsVersion")
 	}
 
-	buildToolsVersion, err := version.NewVersion(buildToolsVersionStr)
-	if err != nil {
-		// Possible defined with variable
-		return nil, fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
-	}
-
-	return buildToolsVersion, nil
+	return buildToolsVersionStr, nil
 }
 
 func parseUseSupportLibrary(buildGradleContent string) (bool, error) {
@@ -211,60 +327,4 @@ func findVariable(content, variable string) (string, error) {
 	}
 
 	return value, nil
-}
-
-func parseGradle(buildGradleContent, gradlePropertiesContent string) (ProjectDependenciesModel, error) {
-	compileSDKVersionStr, err := parseCompileSDKVersion(buildGradleContent)
-	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from build.gradle, error: %s", err)
-	}
-
-	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
-	if err != nil {
-		// Possible defined with variable
-		// Search for var in build.gradle
-		compileSDKVersionStr, err = findVariable(buildGradleContent, compileSDKVersionStr)
-		if err != nil {
-			return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from build.gradle, error: %s", err)
-		}
-
-		compileSDKVesrion, err = version.NewVersion(compileSDKVersionStr)
-		if err != nil {
-			// Search for var in gradle.properties
-			compileSDKVersionStr, err = findVariable(gradlePropertiesContent, compileSDKVersionStr)
-			if err != nil {
-				return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from gradle.properties, error: %s", err)
-			}
-			compileSDKVesrion, err = version.NewVersion(compileSDKVersionStr)
-			if err != nil {
-				return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse (%s), error: %s", compileSDKVersionStr, err)
-			}
-		}
-
-	}
-
-	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
-	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse build tools version, error: %s", err)
-	}
-
-	useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
-	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse support library usage, error: %s", err)
-	}
-
-	useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
-	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse google play service usage, error: %s", err)
-	}
-
-	dependencies := ProjectDependenciesModel{
-		ComplieSDKVersion: compileSDKVesrion,
-		BuildToolsVersion: buildToolsVersion,
-
-		UseSupportLibrary:     useSupportLibrary,
-		UseGooglePlayServices: useGooglePlayServices,
-	}
-
-	return dependencies, nil
 }
