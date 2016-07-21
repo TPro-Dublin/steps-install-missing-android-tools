@@ -306,7 +306,15 @@ func main() {
 		} else {
 			if err := dependencies.ParseComplieSDKVersion(buildGradleContent, gradlePropertiesContent); err != nil {
 				fmt.Println("build.gradle:")
+				fmt.Println("-------------")
 				fmt.Println(buildGradleContent)
+				fmt.Println("-------------")
+
+				fmt.Println("gradle.properties:")
+				fmt.Println("-------------")
+				fmt.Println(gradlePropertiesContent)
+				fmt.Println("-------------")
+
 				log.Fail("Failed to parse compile SDK version, error: %s", err)
 			}
 		}
@@ -317,7 +325,15 @@ func main() {
 			}
 		} else {
 			fmt.Println("build.gradle:")
+			fmt.Println("-------------")
 			fmt.Println(buildGradleContent)
+			fmt.Println("-------------")
+
+			fmt.Println("gradle.properties:")
+			fmt.Println("-------------")
+			fmt.Println(gradlePropertiesContent)
+			fmt.Println("-------------")
+
 			if err := dependencies.ParseBuildToolsVersion(buildGradleContent, gradlePropertiesContent); err != nil {
 				log.Fail("Failed to parse build tools version, error: %s", err)
 			}
