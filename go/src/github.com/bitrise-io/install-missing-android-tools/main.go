@@ -305,6 +305,8 @@ func main() {
 			}
 		} else {
 			if err := dependencies.ParseComplieSDKVersion(buildGradleContent, gradlePropertiesContent); err != nil {
+				fmt.Println("build.gradle:")
+				fmt.Println(buildGradleContent)
 				log.Fail("Failed to parse compile SDK version, error: %s", err)
 			}
 		}
@@ -314,6 +316,8 @@ func main() {
 				log.Fail("Failed to set build tools version (%s), error: %s", buildToolsVersion, err)
 			}
 		} else {
+			fmt.Println("build.gradle:")
+			fmt.Println(buildGradleContent)
 			if err := dependencies.ParseBuildToolsVersion(buildGradleContent, gradlePropertiesContent); err != nil {
 				log.Fail("Failed to parse build tools version, error: %s", err)
 			}
