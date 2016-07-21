@@ -193,16 +193,24 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 }
 
 func findVariable(content, variable string) (string, error) {
+	value := ""
+
+	variableExpStr := `.*` + variable + `\s*=\s*["']*(?P<value>.*)["']*`
+	variableExp := regexp.MustCompile(variableExpStr)
+
 	scanner := bufio.NewScanner(strings.NewReader(content))
 	for scanner.Scan() {
-		scanner.Text()
+		matches := variableExp.FindStringSubmatch(scanner.Text())
+		if len(matches) > 1 {
+			value = matches[1]
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
 
-	return "", nil
+	return value, nil
 }
 
 func parseGradle(buildGradleContent, gradlePropertiesContent string) (ProjectDependenciesModel, error) {
@@ -214,14 +222,25 @@ func parseGradle(buildGradleContent, gradlePropertiesContent string) (ProjectDep
 	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
 	if err != nil {
 		// Possible defined with variable
-		return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse (%s), error: %s", compileSDKVersionStr, err)
+		// Search for var in build.gradle
+		compileSDKVersionStr, err = findVariable(buildGradleContent, compileSDKVersionStr)
+		if err != nil {
+			return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from build.gradle, error: %s", err)
+		}
 
-		/*
-			compileSDKVersionStr, err := findVariable(gradlePropertiesContent, compileSDKVersionStr)
+		compileSDKVesrion, err = version.NewVersion(compileSDKVersionStr)
+		if err != nil {
+			// Search for var in gradle.properties
+			compileSDKVersionStr, err = findVariable(gradlePropertiesContent, compileSDKVersionStr)
 			if err != nil {
 				return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse compile sdk version from gradle.properties, error: %s", err)
 			}
-		*/
+			compileSDKVesrion, err = version.NewVersion(compileSDKVersionStr)
+			if err != nil {
+				return ProjectDependenciesModel{}, fmt.Errorf("Failed to parse (%s), error: %s", compileSDKVersionStr, err)
+			}
+		}
+
 	}
 
 	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
